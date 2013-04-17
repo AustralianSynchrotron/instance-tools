@@ -137,7 +137,7 @@ class SetMetadataHandler(RequestHandler):
 
 
 def runStartScript():
-    call([Configuration()['startScript']])
+    call(Configuration()['startScript'], shell=True)
 
 
 def main():
@@ -170,7 +170,8 @@ def main():
     ])
 
     # add the start script to the io loop, so it is executed first as soon as the ioloop starts
-    IOLoop.instance().add_callback(runStartScript)
+    if config['startScript'] != "":
+        IOLoop.instance().add_callback(runStartScript)
 
     # start the server
     application.listen(8888)
