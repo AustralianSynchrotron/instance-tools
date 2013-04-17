@@ -20,6 +20,8 @@ from tornado.web import RequestHandler, Application, asynchronous
 from tornado.ioloop import IOLoop
 import tornado.log
 
+from subprocess import call
+
 # enable logging
 tornado.log.enable_pretty_logging()
 logger = logging.getLogger(__name__)
@@ -134,6 +136,10 @@ class SetMetadataHandler(RequestHandler):
         self.finish()
 
 
+def runStartScript():
+    call([Configuration()['startScript']])
+
+
 def main():
     # read the configuration
     parser = argparse.ArgumentParser(prog='instmonitord',
@@ -146,11 +152,12 @@ def main():
     confParser = ConfigParser.ConfigParser()
     confParser.read(confPath)
     config = {}
-    config['username'] = confParser.get('config','username')
-    config['password'] = confParser.get('config','password')
-    config['tenantId'] = confParser.get('config','tenantId')
-    config['authURL']  = confParser.get('config','authURL')
-    config['novaURL']  = confParser.get('config','novaURL')
+    config['username']     = confParser.get('config','username')
+    config['password']     = confParser.get('config','password')
+    config['tenantId']     = confParser.get('config','tenantId')
+    config['authURL']      = confParser.get('config','authURL')
+    config['novaURL']      = confParser.get('config','novaURL')
+    config['startScript']  = confParser.get('scripts','afterStart')
     Configuration().clear()
     Configuration().update(config)
 
@@ -161,6 +168,9 @@ def main():
         (r"/shutdown/list",      ListShutdownHandler),      # Lists all currently running shutdowns
         (r"/metadata/set",       SetMetadataHandler),       # Sets a metadata entry to the specified value
     ])
+
+    # add the start script to the io loop, so it is executed first as soon as the ioloop starts
+    IOLoop.instance().add_callback(runStartScript)
 
     # start the server
     application.listen(8888)
