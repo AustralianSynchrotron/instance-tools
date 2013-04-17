@@ -169,10 +169,12 @@ def main():
         (r"/metadata/set",       SetMetadataHandler),       # Sets a metadata entry to the specified value
     ])
 
+    # Start the http server
+    application.listen(8888)
+
     # add the start script to the io loop, so it is executed first as soon as the ioloop starts
     if config['startScript'] != "":
         IOLoop.instance().add_callback(runStartScript)
 
-    # start the server
-    application.listen(8888)
+    # start the IOLoop
     IOLoop.instance().start()
