@@ -50,6 +50,7 @@ def getInstanceID():
 # set the instance's "nexel-ready" flag to true
 def setMetadata(token, instanceID, name, value):
     conf = Configuration()
+    headers = {'Content-Type': 'application/json'}
     headers['X-Auth-Token'] = token
     body = {'metadata': {name: value}}
     url = conf['novaURL']+'/'+conf['tenantId']+'/servers/'+instanceID+'/metadata'
@@ -59,6 +60,7 @@ def setMetadata(token, instanceID, name, value):
 # terminate the instance
 def terminateInstance(token, instanceID):
     conf = Configuration()
+    headers = {'Content-Type': 'application/json'}
     headers['X-Auth-Token'] = token
     url = conf['novaURL']+'/'+conf['tenantId']+'/servers/'+instanceID
     req = urllib2.Request(url, headers=headers)
