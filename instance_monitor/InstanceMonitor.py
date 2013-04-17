@@ -4,7 +4,7 @@
 #  Features:
 #  - shutdown the instance after a specified time
 #  - cancel and list running shutdowns
-#  - sets the server_ready metadata flag
+#  - sets a metadata value
 #-------------------------------------------------------------
 
 import sys
@@ -127,7 +127,10 @@ class ListShutdownHandler(RequestHandler):
 class SetMetadataHandler(RequestHandler):
     @asynchronous
     def post(self):
-        setMetadata(getOpenStackToken(), getInstanceID(), )
+        name  = self.get_argument('name', '')
+        value = self.get_argument('value', '')
+        if name != '':
+            setMetadata(getOpenStackToken(), getInstanceID(), name, value)
         self.finish()
 
 
