@@ -199,7 +199,7 @@ def main():
 
     # perform the init commands
     ShutdownInstance().addToIOLoop(config['countdown'])
-    for key, value in config['metadata']:
+    for key, value in config['metadata'].iteritems():
         setMetadata(getOpenStackToken(), getInstanceID(), key, value)
 
     # Start the http server
