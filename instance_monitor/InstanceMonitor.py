@@ -7,6 +7,7 @@
 #  - sets a metadata value
 #-------------------------------------------------------------
 
+import os
 import sys
 import argparse
 import time
@@ -17,6 +18,7 @@ import json
 import urllib2
 
 from tornado.web import RequestHandler, Application, asynchronous
+from tornado.httpserver import HTTPRequest
 from tornado.ioloop import IOLoop
 import tornado.log
 
@@ -49,6 +51,8 @@ def getInstanceID():
 
 # set the instance's "nexel-ready" flag to true
 def setMetadata(token, instanceID, name, value):
+    if name == '':
+        return
     conf = Configuration()
     headers = {'Content-Type': 'application/json'}
     headers['X-Auth-Token'] = token
@@ -84,9 +88,7 @@ def Configuration():
     return __ConfigurationSingleton().d
 
 
-
-# handler classes
-class AddShutdownHandler(RequestHandler):
+class ShutdownInstance():
 
     _timoutHandle = None
 
@@ -96,14 +98,22 @@ class AddShutdownHandler(RequestHandler):
             del Timeout()[:]
             terminateInstance(getOpenStackToken(), getInstanceID())
 
+    def addToIOLoop(self, timeout):
+        if timeout > -1:
+            self._timoutHandle = IOLoop.instance().add_timeout(time.time()+(timeout*60),self._shutdownInstance)
+            Timeout().append({'handle'   : self._timoutHandle,
+                              'start'    : time.time(),
+                              'duration' : timeout*60})
+
+
+# handler classes
+class AddShutdownHandler(RequestHandler):
+    _shtdwn = ShutdownInstance()
+
     @asynchronous
     def post(self):
         timeout = int(self.get_argument('timeout', '-1'))
-        if timeout > -1:
-            self._timoutHandle = IOLoop.instance().add_timeout(time.time()+timeout,self._shutdownInstance)
-            Timeout().append({'handle'   : self._timoutHandle,
-                              'start'    : time.time(),
-                              'duration' : timeout})
+        _shtdwn.addToIOLoop(timeout)
         self.finish()
 
 
@@ -133,8 +143,7 @@ class SetMetadataHandler(RequestHandler):
     def post(self):
         name  = self.get_argument('name', '')
         value = self.get_argument('value', '')
-        if name != '':
-            setMetadata(getOpenStackToken(), getInstanceID(), name, value)
+        setMetadata(getOpenStackToken(), getInstanceID(), name, value)
         self.finish()
 
 
@@ -154,12 +163,25 @@ def main():
     confParser = ConfigParser.ConfigParser()
     confParser.read(confPath)
     config = {}
+    config['port']         = int(confParser.get('config','port'))
     config['username']     = confParser.get('config','username')
     config['password']     = confParser.get('config','password')
     config['tenantId']     = confParser.get('config','tenantId')
     config['authURL']      = confParser.get('config','authURL')
     config['novaURL']      = confParser.get('config','novaURL')
-    config['startScript']  = confParser.get('scripts','afterStart')
+    if confParser.get('config','deleteConfig').lower() == "true":
+        config['deleteConfig'] = True
+    else:
+        config['deleteConfig'] = False
+    if confParser.get('init','countdown') != "":
+        config['countdown'] = int(confParser.get('init','countdown'))
+    else:
+        config['countdown'] = -1
+    if confParser.get('init','metadata') != "":
+        config['metadata'] = json.loads(confParser.get('init','metadata'))
+    else:
+        config['metadata'] = {}
+
     Configuration().clear()
     Configuration().update(config)
 
@@ -171,12 +193,17 @@ def main():
         (r"/metadata/set",       SetMetadataHandler),       # Sets a metadata entry to the specified value
     ])
 
-    # Start the http server
-    application.listen(8888)
+    # delete the config file if the associated flag is set to True
+    if config['deleteConfig']:
+        os.remove(confPath)
 
-    # add the start script to the io loop, so it is executed first as soon as the ioloop starts
-    if config['startScript'] != "":
-        IOLoop.instance().add_callback(runStartScript)
+    # perform the init commands
+    ShutdownInstance().addToIOLoop(config['countdown'])
+    for key, value in config['metadata']:
+        setMetadata(getOpenStackToken(), getInstanceID(), key, value)
+
+    # Start the http server
+    application.listen(config['port'])
 
     # start the IOLoop
     IOLoop.instance().start()
