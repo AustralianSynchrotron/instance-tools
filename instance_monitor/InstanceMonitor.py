@@ -113,7 +113,7 @@ class AddShutdownHandler(RequestHandler):
     @asynchronous
     def post(self):
         timeout = int(self.get_argument('timeout', '-1'))
-        _shtdwn.addToIOLoop(timeout)
+        self._shtdwn.addToIOLoop(timeout)
         self.finish()
 
 
