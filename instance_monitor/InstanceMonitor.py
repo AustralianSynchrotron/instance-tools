@@ -138,6 +138,18 @@ class ListShutdownHandler(RequestHandler):
         self.finish()
 
 
+class GetShutdownHandler(RequestHandler):
+    @asynchronous
+    def get(self):
+        minTime = 0
+        for item in Timeout():
+            itemTime = int((item['start']+item['duration']-time.time())/60)
+            if (minTime == 0) or (itemTime < minTime):
+                minTime = itemTime
+        self.write(str(minTime))
+        self.finish()
+
+
 class SetMetadataHandler(RequestHandler):
     @asynchronous
     def post(self):
@@ -190,6 +202,7 @@ def main():
         (r"/shutdown/add",       AddShutdownHandler),       # Shutdown the instance after the specified time [sec]
         (r"/shutdown/cancelAll", CancelAllShutdownHandler), # Cancel all shutdown requests
         (r"/shutdown/list",      ListShutdownHandler),      # Lists all currently running shutdowns
+        (r"/shutdown/get",       GetShutdownHandler),       # Get the smallest remaining time of the currenty running shutdowns
         (r"/metadata/set",       SetMetadataHandler),       # Sets a metadata entry to the specified value
     ])
 
