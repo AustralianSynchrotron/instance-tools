@@ -6,7 +6,7 @@
         <height>500</height>
         <iconpath>icons</iconpath>
         <logo>logo.png</logo>
-        <greeting type="Text">Welcome user</greeting>
+        <greetings type="Text">Welcome user</greetings>
     </settings>
 
     <content>

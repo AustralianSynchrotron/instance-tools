@@ -175,6 +175,7 @@ class RaidarStartScreen(QWidget):
         content_layout = QHBoxLayout()
         left_layout    = QVBoxLayout()
         right_layout   = QVBoxLayout()
+        status_layout  = QHBoxLayout()
         self.setLayout(main_layout)
 
         # Set title and title logo
@@ -185,13 +186,13 @@ class RaidarStartScreen(QWidget):
         main_layout.addWidget(logo_label, 0, Qt.AlignCenter)
 
         # Add the welcome [username] label
-        greeting_type = self._node_settings.find('greeting').attrib['type']
+        greeting_type = self._node_settings.find('greetings').attrib['type']
         greeting_text = ""
         if greeting_type == "Text":
-            greeting_text = self._node_settings.find('greeting').text
+            greeting_text = self._node_settings.find('greetings').text
         elif greeting_type == "VirtualBox":
-            print self._node_settings.find('greeting').text
-            templ = Template(self._node_settings.find('greeting').text)
+            print self._node_settings.find('greetings').text
+            templ = Template(self._node_settings.find('greetings').text)
             greeting_text = templ.substitute(username=self.get_greeting_VirtualBox())
         elif greeting_type == "NeCTAR":
             pass
@@ -202,6 +203,7 @@ class RaidarStartScreen(QWidget):
         main_layout.addLayout(content_layout)
         content_layout.addLayout(left_layout)
         content_layout.addLayout(right_layout)
+        main_layout.addLayout(status_layout)
 
         # Center application window
         self.setMinimumSize(int(self._node_settings.find('width').text),
@@ -222,6 +224,11 @@ class RaidarStartScreen(QWidget):
 
         left_layout.addStretch(1)
         right_layout.addStretch(1)
+
+        exit_button = QPushButton("close window")
+        exit_button.clicked.connect(exit)
+        status_layout.addStretch(1)
+        status_layout.addWidget(exit_button)
 
 
 #-----------------------
