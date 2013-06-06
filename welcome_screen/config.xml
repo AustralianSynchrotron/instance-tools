@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<startScreen>
+    <settings>
+        <title>RAIDAR - Welcome</title>
+        <width>800</width>
+        <height>500</height>
+        <iconpath>icons</iconpath>
+        <logo>logo.png</logo>
+        <greeting type="Text">Welcome user</greeting>
+    </settings>
+
+    <content>
+        <group name="applications" align="left" bkgColour="170,204,238">
+            <shortcut>
+                <name>Firefox</name>
+                <description>Firefox browser</description>
+                <icon>internet.png</icon>
+                <executable>firefox</executable>
+            </shortcut>
+        </group>
+    
+        <group name="folders" align="right" bkgColour="253,217,155">
+            <shortcut>
+                <name>Home</name>
+                <description>Your home folder</description>
+                <icon>folder.png</icon>
+                <executable>nautilus</executable>
+            </shortcut>
+        </group>
+    
+        <group name="weblinks" align="right" bkgColour="210,210,210">
+            <shortcut>
+                <name>Wiki</name>
+                <description>Wikipedia</description>
+                <icon>wiki.png</icon>
+                <executable>firefox</executable>
+                <arguments>
+                    <argument>http://en.wikipedia.org/wiki/Main_Page</argument>
+                </arguments>
+            </shortcut>
+        </group>
+    </content>
+</startScreen>

@@ -18,6 +18,7 @@ setup(
     install_requires=[
         'argparse',
         'tornado >= 2.4.1',
+        'pyside >= 1.1.2'
     ],
     classifiers=[
         'Environment :: OpenStack',
