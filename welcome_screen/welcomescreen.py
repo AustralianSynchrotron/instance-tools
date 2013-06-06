@@ -31,6 +31,7 @@ import os
 import subprocess
 from subprocess import Popen
 from sys import platform
+from string import Template
 from PySide.QtCore import *
 from PySide.QtGui import *
 import xml.etree.ElementTree as ET
@@ -189,7 +190,9 @@ class RaidarStartScreen(QWidget):
         if greeting_type == "Text":
             greeting_text = self._node_settings.find('greeting').text
         elif greeting_type == "VirtualBox":
-            greeting_text = self._node_settings.find('greeting').text%self.get_greeting_VirtualBox()
+            print self._node_settings.find('greeting').text
+            templ = Template(self._node_settings.find('greeting').text)
+            greeting_text = templ.substitute(username=self.get_greeting_VirtualBox())
         elif greeting_type == "NeCTAR":
             pass
         welcome_label = QLabel(greeting_text, self)

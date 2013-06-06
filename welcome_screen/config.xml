@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <startScreen>
     <settings>
-        <title>RAIDAR - Welcome</title>
+        <title>Welcome</title>
         <width>800</width>
         <height>500</height>
         <iconpath>icons</iconpath>
