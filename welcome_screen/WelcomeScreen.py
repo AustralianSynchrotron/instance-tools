@@ -34,6 +34,7 @@ from sys import platform
 from string import Template
 import argparse
 import urllib2
+import json
 from PySide.QtCore import *
 from PySide.QtGui import *
 import xml.etree.ElementTree as ET
