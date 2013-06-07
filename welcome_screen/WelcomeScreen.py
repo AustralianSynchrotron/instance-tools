@@ -133,7 +133,7 @@ class RaidarStartScreen(QWidget):
         # Fill the arguments
         arg_nodes = node.find('arguments')
         if arg_nodes != None:
-            for arg_node in arg_nodes.iter('argument'):
+            for arg_node in arg_nodes.findall('argument'):
                 cmd.append(arg_node.text)
 
         # Check if the icon exists, if not use a dummy icon
@@ -230,7 +230,7 @@ class RaidarStartScreen(QWidget):
         for group in root.find('content'):
             bkg_colour = map(int, group.attrib['bkgColour'].split(','))
 
-            for shortcut in group.iter('shortcut'):
+            for shortcut in group.findall('shortcut'):
                 if group.attrib['align'] == "left":
                     self.add_group(left_layout, shortcut, bkg_colour)
                 else:
