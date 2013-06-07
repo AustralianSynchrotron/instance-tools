@@ -15,7 +15,7 @@ setup(
     author='Andreas Moll',
     author_email='andreas.moll@synchrotron.org.au',
     packages=['instance_monitor', 'welcome_screen'],
-    package_data={'welcome_screen': ['icons/*']}
+    package_data={'welcome_screen': ['icons/*']},
     install_requires=[
         'argparse',
         'tornado >= 2.4.1'
