@@ -17,8 +17,7 @@ setup(
     packages=['instance_monitor', 'welcome_screen'],
     install_requires=[
         'argparse',
-        'tornado >= 2.4.1',
-        'pyside >= 1.1.2'
+        'tornado >= 2.4.1'
     ],
     classifiers=[
         'Environment :: OpenStack',
@@ -29,5 +28,5 @@ setup(
         'Programming Language :: Python',
     ],
     license='Modified BSD',
-    scripts=['instmonitord'],
+    scripts=['instmonitord', 'welcomescreen'],
 )

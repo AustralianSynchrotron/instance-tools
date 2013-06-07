@@ -32,6 +32,8 @@ import subprocess
 from subprocess import Popen
 from sys import platform
 from string import Template
+import argparse
+import urllib2
 from PySide.QtCore import *
 from PySide.QtGui import *
 import xml.etree.ElementTree as ET
@@ -159,6 +161,17 @@ class RaidarStartScreen(QWidget):
         return user_fullname
 
 
+    def get_greeting_NeCTAR(self):
+        try:
+            url = 'http://169.254.169.254/openstack/2012-08-10/meta_data.json'
+            req = urllib2.Request(url)
+            resp = urllib2.urlopen(req)
+            j = json.loads(resp.read())
+            return j['meta']['nexel-username']
+        except Exception:
+            return ""
+
+
     def __init__(self, config_filename):
         QWidget.__init__(self)
 
@@ -168,7 +181,8 @@ class RaidarStartScreen(QWidget):
 
         # Get application settings
         self._node_settings = root.find('settings')
-        self._icon_path = self._node_settings.find('iconpath').text
+        self._icon_path = os.path.join(os.path.dirname(os.path.abspath(config_filename)),
+                                       self._node_settings.find('iconpath').text)
 
         # Create the layout
         main_layout    = QVBoxLayout()
@@ -191,11 +205,11 @@ class RaidarStartScreen(QWidget):
         if greeting_type == "Text":
             greeting_text = self._node_settings.find('greetings').text
         elif greeting_type == "VirtualBox":
-            print self._node_settings.find('greetings').text
             templ = Template(self._node_settings.find('greetings').text)
             greeting_text = templ.substitute(username=self.get_greeting_VirtualBox())
         elif greeting_type == "NeCTAR":
-            pass
+            templ = Template(self._node_settings.find('greetings').text)
+            greeting_text = templ.substitute(username=self.get_greeting_NeCTAR())
         welcome_label = QLabel(greeting_text, self)
         main_layout.addWidget(welcome_label, 0, Qt.AlignLeft)
 
@@ -234,7 +248,17 @@ class RaidarStartScreen(QWidget):
 #-----------------------
 #  Execute application
 #-----------------------
-app = QApplication(sys.argv)
-widget = RaidarStartScreen(os.path.join(os.getcwd(), "config.xml"))
-widget.show()
-sys.exit(app.exec_())
+def main():
+    # read the configuration
+    parser = argparse.ArgumentParser(prog='welcomescreen',
+                                     description='Welcome Screen GUI')
+    parser.add_argument('<config_file>', action='store',
+                        help='Path to configuration file')
+    args = vars(parser.parse_args())
+    confPath = args['<config_file>']
+
+    # start the application
+    app = QApplication(sys.argv)
+    widget = RaidarStartScreen(confPath)
+    widget.show()
+    sys.exit(app.exec_())
