@@ -14,6 +14,7 @@
             <shortcut>
                 <name>Firefox</name>
                 <description>Firefox browser</description>
+                <colour>0,0,0</colour>
                 <icon>internet.png</icon>
                 <executable>firefox</executable>
             </shortcut>
@@ -23,6 +24,7 @@
             <shortcut>
                 <name>Home</name>
                 <description>Your home folder</description>
+                <colour>0,0,0</colour>
                 <icon>folder.png</icon>
                 <executable>nautilus</executable>
             </shortcut>
@@ -32,6 +34,7 @@
             <shortcut>
                 <name>Wiki</name>
                 <description>Wikipedia</description>
+                <colour>0,0,0</colour>
                 <icon>wiki.png</icon>
                 <executable>firefox</executable>
                 <arguments>

@@ -54,7 +54,8 @@ if platform == "win32":
 class RaidarItem(QWidget):
     """The shortcut GUI Qt widget.
        It consists of an icon on the left hand side and a title+description on the right hand side."""
-    def __init__(self, name, description, icon, cmd=[], shell=False, cwd=None, bkg_colour = [255, 255, 255]):
+    def __init__(self, name, description, icon, cmd=[], shell=False, cwd=None,
+                 bkg_colour=[255,255,255], text_colour=[0,0,0]):
         QWidget.__init__(self)
 
         self._cmd = cmd
@@ -77,8 +78,10 @@ class RaidarItem(QWidget):
         cont_layout.addLayout(text_layout)
         cont_layout.addStretch(1)
 
-        name_label = QLabel('<b>'+name+'</b>', self)
-        desc_label = QLabel(description, self)
+        txt_colour = QColor(text_colour[0], text_colour[1], text_colour[2])
+        font_template = "<font color='%s'>%s</font>"
+        name_label = QLabel(font_template%(txt_colour.name(), '<b>'+name+'</b>'), self)
+        desc_label = QLabel(font_template%(txt_colour.name(), description), self)
         text_layout.addWidget(name_label)
         text_layout.addWidget(desc_label)
 
@@ -103,7 +106,8 @@ class RaidarStartScreen(QWidget):
 
     def add_group(self, container, node, bkg_colour):
         """Adds a group of shortcut widgets to the specified container.
-           container - The container widget to which the widgets of the group should be added.
+           container - The container widget to which the widgets of the group
+                       should be added.
            node - The XML node of the group
            bkg_colour - The background colour of the group's widgets.
         """
@@ -118,6 +122,7 @@ class RaidarStartScreen(QWidget):
         name = node.find('name').text
         desc = node.find('description').text
         cmd  = [node.find('executable').text]
+        txt_colour = map(int, node.find('colour').text.split(','))
 
         # Check if the shell attribute was set
         shell = False
@@ -144,7 +149,8 @@ class RaidarStartScreen(QWidget):
             icon = QPixmap(icon_location)
 
         # Create the widget and add it to the program container
-        shortcut_item = RaidarItem(name, desc, icon, cmd, shell, cwd, bkg_colour)
+        shortcut_item = RaidarItem(name, desc, icon, cmd, shell, cwd,
+                                   bkg_colour, txt_colour)
         container.addWidget(shortcut_item)
 
 
@@ -220,7 +226,7 @@ class RaidarStartScreen(QWidget):
         content_layout.addLayout(right_layout)
         main_layout.addLayout(status_layout)
 
-        # Center application window
+        # Centre application window
         self.setMinimumSize(int(self._node_settings.find('width').text),
                             int(self._node_settings.find('height').text))
         desktop_widget = QApplication.desktop()
