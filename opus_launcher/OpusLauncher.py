@@ -124,6 +124,7 @@ class OpusLauncher(QWidget):
         # Launch OPUS
         cmd = [self._opus_settings.find('cmd').text]
         cmd.append("/LANGUAGE=ENGLISH")
+        cmd.append("/LOADFILE=%s"%self._dest_path)
         Popen(cmd, cwd=self._opus_settings.find('cwd').text)
 
 #-----------------------
