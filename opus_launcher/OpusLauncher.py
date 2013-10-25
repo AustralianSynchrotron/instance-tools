@@ -111,10 +111,14 @@ class OpusLauncher(QWidget):
         self.move(screen_rect.center() - self.rect().center())
 
     def launch_opus(self):
+        # Check if the destination folder exists, if not create it
+        if not os.path.exists(self._dest_path):
+            os.makedirs(self._dest_path)
+
         # Copy the EPN folders
         sel_epns = self.epn_list.selectedItems()
         for sel_epn in sel_epns:
-            shutil.copytree(os.path.join(self._src_path, sel_epn.text()),
+            shutil.copytree(os.path.join(self._src_path, sel_epn.text(), "data"),
                             os.path.join(self._dest_path, sel_epn.text()))
 
         # Launch OPUS
