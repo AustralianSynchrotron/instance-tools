@@ -115,11 +115,13 @@ class OpusLauncher(QWidget):
         if not os.path.exists(self._dest_path):
             os.makedirs(self._dest_path)
 
-        # Copy the EPN folders
+        # Copy the EPN folders only if the EPN hasn't been copied yet
         sel_epns = self.epn_list.selectedItems()
         for sel_epn in sel_epns:
-            shutil.copytree(os.path.join(self._src_path, sel_epn.text(), "data"),
-                            os.path.join(self._dest_path, sel_epn.text()))
+            dest_dir = os.path.join(self._dest_path, sel_epn.text())
+            if not os.path.exists(dest_dir):
+                shutil.copytree(os.path.join(self._src_path, sel_epn.text(), "data"),
+                                dest_dir)
 
         # Launch OPUS
         cmd = [self._opus_settings.find('cmd').text]
