@@ -72,18 +72,19 @@ class OpusLauncher(QWidget):
         self.setWindowTitle(self._node_settings.find('title').text)
         logo = QPixmap(os.path.join(self._icon_path, self._node_settings.find('logo').text))
         logo_label = QLabel(self)
-        logo_label.setAutoFillBackground(True)
-        logo_palette = logo_label.palette()
-        logo_palette.setColor(QPalette.Window, Qt.white)
-        logo_label.setPalette(logo_palette)
+        #logo_label.setAutoFillBackground(True)
+        #logo_palette = logo_label.palette()
+        #logo_palette.setColor(QPalette.Window, Qt.white)
+        #logo_label.setPalette(logo_palette)
+        logo_label.setAlignment(Qt.AlignCenter)
         logo_label.setPixmap(logo)
-        main_layout.addWidget(logo_label, 0, Qt.AlignHCenter)
+        main_layout.addWidget(logo_label)
 
         # Add the instruction label
         instruction_text = self._node_settings.find('instruction').text
         instruction_label = QLabel(instruction_text, self)
         instruction_label.setWordWrap(True)
-        main_layout.addWidget(instruction_label, 0, Qt.AlignHCenter)
+        main_layout.addWidget(instruction_label)
 
         # Get a list of the EPN folders
         self._src_path = root.find('source').text
@@ -96,12 +97,13 @@ class OpusLauncher(QWidget):
         self.epn_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
         for epn_dir in epn_dirs:
             self.epn_list.addItem(epn_dir)
-        main_layout.addWidget(self.epn_list, 1, Qt.AlignHCenter)
+        main_layout.addWidget(self.epn_list)
 
         # Add the start launch button
         launch_button = QPushButton("Start OPUS")
+        launch_button.setFixedHeight(50)
         launch_button.clicked.connect(self.launch_opus)
-        main_layout.addWidget(launch_button, 0, Qt.AlignHCenter)
+        main_layout.addWidget(launch_button)
 
         # Centre application window
         self.setMinimumSize(int(self._node_settings.find('width').text),
@@ -110,23 +112,63 @@ class OpusLauncher(QWidget):
         screen_rect = desktop_widget.availableGeometry(self)
         self.move(screen_rect.center() - self.rect().center())
 
+    def make_dirs(self, dest):
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+
+    def source_dir(self, epn):
+        return os.path.join(self._src_path, epn, "data")
+
+    def count_files(self, epns):
+        result = 0
+        for epn in epns:
+            files = []
+            for path, dirs, filenames in os.walk(self.source_dir(epn)):
+                files.extend(filenames)
+            result += len(files)
+        return result
+
     def launch_opus(self):
         # Check if the destination folder exists, if not create it
-        if not os.path.exists(self._dest_path):
-            os.makedirs(self._dest_path)
+        self.make_dirs(self._dest_path)
 
-        # Copy the EPN folders only if the EPN hasn't been copied yet
-        sel_epns = self.epn_list.selectedItems()
-        for sel_epn in sel_epns:
-            dest_dir = os.path.join(self._dest_path, sel_epn.text())
-            if not os.path.exists(dest_dir):
-                shutil.copytree(os.path.join(self._src_path, sel_epn.text(), "data"),
-                                dest_dir)
+        # Get selected EPNs
+        epns = [epn.text() for epn in self.epn_list.selectedItems()]
+
+        # Count the number of files that will be copied
+        num_files = self.count_files(epns)
+
+        # Copy the files and folders and report the progress
+        if num_files > 0:
+            # Show progress dialog
+            progress = QProgressDialog("Copying experiments...", "Cancel",
+                                       0, num_files, self)
+            progress.setWindowModality(Qt.WindowModal)
+
+            num_copied = 0
+            for epn in epns:
+                src  = self.source_dir(epn)
+                dest = os.path.join(self._dest_path, epn)
+
+                # Copy the EPN folder only if the EPN hasn't been copied yet
+                if not os.path.exists(dest):
+                    self.make_dirs(dest)
+
+                    for path, dirs, filenames in os.walk(src):
+                        for directory in dirs:
+                            dest_dir = path.replace(src, dest)
+                            self.make_dirs(os.path.join(dest_dir, directory))
+                        for sfile in filenames:
+                            src_file = os.path.join(path, sfile)
+                            dest_file = os.path.join(path.replace(src, dest), sfile)
+                            shutil.copy(src_file, dest_file)
+                            num_copied += 1
+                            progress.setValue(num_copied)
+            progress.setValue(num_files)
 
         # Launch OPUS
         cmd = [self._opus_settings.find('cmd').text]
         cmd.append("/LANGUAGE=ENGLISH")
-        cmd.append("/LOADFILE=%s"%self._dest_path)
         Popen(cmd, cwd=self._opus_settings.find('cwd').text)
 
 #-----------------------
