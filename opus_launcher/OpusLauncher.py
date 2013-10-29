@@ -97,6 +97,11 @@ class OpusLauncher(QWidget):
         layout.addWidget(title_label)
 
 
+    def enable_launch_button(self):
+        if len(self._epn_list.selectedItems()) > 0:
+            self._launch_button.setEnabled(True)
+
+
     def create_widget_epn(self, root):
         widget = QWidget()
         layout = QVBoxLayout()
@@ -116,17 +121,19 @@ class OpusLauncher(QWidget):
                     if os.path.isdir(os.path.join(self._src_path, name))]
 
         # Add the list widget and fill it with data
-        self.epn_list = QListWidget(self)
-        self.epn_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self._epn_list = QListWidget(self)
+        self._epn_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self._epn_list.itemSelectionChanged.connect(self.enable_launch_button)
         for epn_dir in epn_dirs:
-            self.epn_list.addItem(epn_dir)
-        layout.addWidget(self.epn_list)
+            self._epn_list.addItem(epn_dir)
+        layout.addWidget(self._epn_list)
 
         # Add the start launch button
-        launch_button = QPushButton("Start OPUS")
-        launch_button.setFixedHeight(50)
-        launch_button.clicked.connect(self.launch_opus)
-        layout.addWidget(launch_button)
+        self._launch_button = QPushButton("Start OPUS")
+        self._launch_button.setFixedHeight(50)
+        self._launch_button.clicked.connect(self.launch_opus)
+        self._launch_button.setEnabled(False)
+        layout.addWidget(self._launch_button)
         return widget
 
 
@@ -166,6 +173,12 @@ class OpusLauncher(QWidget):
         self._launch_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self._launch_label)
         layout.addStretch(1)
+
+        # Add the close button
+        close_button = QPushButton("Close")
+        close_button.setFixedHeight(50)
+        close_button.clicked.connect(exit)
+        layout.addWidget(close_button)
         return widget
 
 
@@ -196,7 +209,7 @@ class OpusLauncher(QWidget):
         self.make_dirs(self._dest_path)
  
         # Get selected EPNs
-        epns = [epn.text() for epn in self.epn_list.selectedItems()]
+        epns = [epn.text() for epn in self._epn_list.selectedItems()]
 
         # Count the number of files that will be copied
         num_files = self.count_files(epns)
@@ -230,9 +243,9 @@ class OpusLauncher(QWidget):
         self._progress_widget.hide()
         self._launch_widget.show()
         QApplication.processEvents()
-        #cmd = [self._opus_settings.find('cmd').text]
-        #cmd.append("/LANGUAGE=ENGLISH")
-        #Popen(cmd, cwd=self._opus_settings.find('cwd').text)
+        cmd = [self._opus_settings.find('cmd').text]
+        cmd.append("/LANGUAGE=ENGLISH")
+        Popen(cmd, cwd=self._opus_settings.find('cwd').text)
 
 #-----------------------
 #  Execute application
@@ -249,5 +262,6 @@ def main():
     # start the application
     app = QApplication(sys.argv)
     widget = OpusLauncher(confPath)
+    widget.setWindowFlags(Qt.WindowStaysOnTopHint)
     widget.show()
     sys.exit(app.exec_())
