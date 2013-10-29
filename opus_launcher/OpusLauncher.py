@@ -30,6 +30,7 @@ import sys
 import os
 import shutil
 import subprocess
+import threading
 from subprocess import Popen
 from sys import platform
 import argparse
@@ -56,35 +57,57 @@ class OpusLauncher(QWidget):
         tree = ET.parse(config_filename)
         root = tree.getroot()
 
-        # Get application settings
+        # Get settings
         self._node_settings = root.find('app')
-        self._icon_path = os.path.join(os.path.dirname(os.path.abspath(config_filename)),
-                                       self._node_settings.find('iconpath').text)
-
-        # Get OPUS settings
+        self._title = self._node_settings.find('title').text
         self._opus_settings = root.find('opus')
 
-        # Create the layout
-        main_layout = QVBoxLayout()
-        self.setLayout(main_layout)
+        # Create the main layout
+        self._main_layout = QVBoxLayout()
+        self.setLayout(self._main_layout)
 
-        # Set title and title logo
-        self.setWindowTitle(self._node_settings.find('title').text)
-        logo = QPixmap(os.path.join(self._icon_path, self._node_settings.find('logo').text))
-        logo_label = QLabel(self)
-        #logo_label.setAutoFillBackground(True)
-        #logo_palette = logo_label.palette()
-        #logo_palette.setColor(QPalette.Window, Qt.white)
-        #logo_label.setPalette(logo_palette)
-        logo_label.setAlignment(Qt.AlignCenter)
-        logo_label.setPixmap(logo)
-        main_layout.addWidget(logo_label)
+        # Create the different widgets and set the default
+        self._epn_widget = self.create_widget_epn(root)
+        self._progress_widget = self.create_widget_progress()
+        self._launch_widget = self.create_widget_launch()
+        self._main_layout.addWidget(self._epn_widget)
+        self._main_layout.addWidget(self._progress_widget)
+        self._main_layout.addWidget(self._launch_widget)
+        self._progress_widget.setVisible(False)
+        self._launch_widget.setVisible(False)
+
+        # Create title
+        self.setWindowTitle(self._title)
+
+        # Centre application window
+        self.setMinimumSize(int(self._node_settings.find('width').text),
+                            int(self._node_settings.find('height').text))
+        desktop_widget = QApplication.desktop()
+        screen_rect = desktop_widget.availableGeometry(self)
+        self.move(screen_rect.center() - self.rect().center())
+
+
+    def add_title(self, layout):
+        title_label = QLabel(self._title, self)
+        font = title_label.font()
+        font.setPointSize(48)
+        font.setBold(True)
+        title_label.setFont(font)
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
+
+
+    def create_widget_epn(self, root):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.add_title(layout)
 
         # Add the instruction label
         instruction_text = self._node_settings.find('instruction').text
         instruction_label = QLabel(instruction_text, self)
         instruction_label.setWordWrap(True)
-        main_layout.addWidget(instruction_label)
+        layout.addWidget(instruction_label)
 
         # Get a list of the EPN folders
         self._src_path = root.find('source').text
@@ -97,20 +120,54 @@ class OpusLauncher(QWidget):
         self.epn_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
         for epn_dir in epn_dirs:
             self.epn_list.addItem(epn_dir)
-        main_layout.addWidget(self.epn_list)
+        layout.addWidget(self.epn_list)
 
         # Add the start launch button
         launch_button = QPushButton("Start OPUS")
         launch_button.setFixedHeight(50)
         launch_button.clicked.connect(self.launch_opus)
-        main_layout.addWidget(launch_button)
+        layout.addWidget(launch_button)
+        return widget
 
-        # Centre application window
-        self.setMinimumSize(int(self._node_settings.find('width').text),
-                            int(self._node_settings.find('height').text))
-        desktop_widget = QApplication.desktop()
-        screen_rect = desktop_widget.availableGeometry(self)
-        self.move(screen_rect.center() - self.rect().center())
+
+    def create_widget_progress(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.add_title(layout)
+
+        # Add the subtitle label
+        subtitle_label = QLabel("Copying the files for the selected experiment(s) "+
+                                "from the archive to the local drive.", self)
+        subtitle_label.setWordWrap(True)
+        layout.addWidget(subtitle_label)
+
+        # Add the filename label
+        layout.addStretch(1)
+        self._progress_label = QLabel(self)
+        self._progress_label.setWordWrap(True)
+        layout.addWidget(self._progress_label)
+
+        # Add the progress bar
+        self._progress_bar = QProgressBar(self)
+        layout.addWidget(self._progress_bar)
+        layout.addStretch(1)
+        return widget
+
+
+    def create_widget_launch(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.add_title(layout)
+        layout.addStretch(1)
+        self._launch_label = QLabel("Launching OPUS (might take a few minutes)...",
+                                    self)
+        self._launch_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self._launch_label)
+        layout.addStretch(1)
+        return widget
+
 
     def make_dirs(self, dest):
         if not os.path.exists(dest):
@@ -128,10 +185,16 @@ class OpusLauncher(QWidget):
             result += len(files)
         return result
 
+
     def launch_opus(self):
+        # Show the progress widget
+        self._epn_widget.hide()
+        self._progress_widget.show()
+        QApplication.processEvents()
+
         # Check if the destination folder exists, if not create it
         self.make_dirs(self._dest_path)
-
+ 
         # Get selected EPNs
         epns = [epn.text() for epn in self.epn_list.selectedItems()]
 
@@ -140,12 +203,8 @@ class OpusLauncher(QWidget):
 
         # Copy the files and folders and report the progress
         if num_files > 0:
-            # Show progress dialog
-            progress = QProgressDialog("Copying experiments...", "Cancel",
-                                       0, num_files, self)
-            progress.setWindowModality(Qt.WindowModal)
-
             num_copied = 0
+            self._progress_bar.setMaximum(num_files)
             for epn in epns:
                 src  = self.source_dir(epn)
                 dest = os.path.join(self._dest_path, epn)
@@ -163,13 +222,17 @@ class OpusLauncher(QWidget):
                             dest_file = os.path.join(path.replace(src, dest), sfile)
                             shutil.copy(src_file, dest_file)
                             num_copied += 1
-                            progress.setValue(num_copied)
-            progress.setValue(num_files)
+                            self._progress_label.setText(sfile)
+                            self._progress_bar.setValue(num_copied)
+            self._progress_bar.setValue(num_files)
 
-        # Launch OPUS
-        cmd = [self._opus_settings.find('cmd').text]
-        cmd.append("/LANGUAGE=ENGLISH")
-        Popen(cmd, cwd=self._opus_settings.find('cwd').text)
+        # Show the launch widget and launch OPUS
+        self._progress_widget.hide()
+        self._launch_widget.show()
+        QApplication.processEvents()
+        #cmd = [self._opus_settings.find('cmd').text]
+        #cmd.append("/LANGUAGE=ENGLISH")
+        #Popen(cmd, cwd=self._opus_settings.find('cwd').text)
 
 #-----------------------
 #  Execute application
